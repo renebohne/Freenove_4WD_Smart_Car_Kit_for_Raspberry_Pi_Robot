@@ -1,3 +1,6 @@
+install/
+build/
+log/
 devel/
 logs/
 build/
