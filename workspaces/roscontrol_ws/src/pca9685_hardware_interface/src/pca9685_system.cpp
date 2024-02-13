@@ -134,14 +134,10 @@ double Pca9685SystemHardware::command_to_motor_pwm(double command){
 
     double clamped_command = std::clamp(command, min_input, max_input);
 
-    double min_duty_cycle = 0.5;
-    double max_duty_cycle = 2.5;
+    double min_pwm = 0;
+    double max_pwm = 4095;
 
-
-    double slope = (max_duty_cycle-min_duty_cycle)/(max_input-min_input);
-    double offset = (max_duty_cycle+min_duty_cycle)/2;
-
-    return slope * clamped_command + offset;
+    return clamped_command * max_pwm;
 
 }
 
@@ -156,23 +152,21 @@ hardware_interface::return_type Pca9685SystemHardware::write(
    
     if(i<4)//motors
     {
-      double motor_ms = command_to_motor_pwm(hw_commands_[i]);
-      //auto period_ms = 1000.0 / 200.0;
-      //auto bits_per_ms = 4096 / period_ms;
-      //auto bits = motor_ms * bits_per_ms;
-      uint16_t bits = 1000;
+      double motor_pwm_double = command_to_motor_pwm(hw_commands_[i]);
+      int motor_pwm = (int) motor_pwm_double;
+      uint16_t bits = abs(motor_pwm);
 
       //  RCLCPP_INFO(
       //   rclcpp::get_logger("Pca9685SystemHardware"),
       //   "Joint '%d' has command '%f', duty_cycle: '%f'.", i, hw_commands_[i], motor_ms);
 
 
-      if(motor_ms==1.5)//stop
+      if(motor_pwm==0)//stop
       {
         pca.set_pwm(i*2, 0, 0);
         pca.set_pwm(i*2+1, 0, 0);
       }
-      else if(motor_ms>1.5)//forward
+      else if(motor_pwm>0)//forward
       {
         if(i==1)//lower left motor is inverted
         {
